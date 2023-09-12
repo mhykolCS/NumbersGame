@@ -17,8 +17,10 @@ int main(int argc, char *argv[]){
     int server_bind_status;
     int server_listen_status;
     int client_socket;
-    int active_connections = 0;
     int client_socket_size = sizeof(client_info);
+
+
+    fd_set current_sockets, ready_sockets;
 
     // TCP Socket
     server_socket = socket(NET_PROTOCOL, TCP_CONNECTION, 0);
@@ -59,6 +61,7 @@ int main(int argc, char *argv[]){
     }
 
     // accept connection request
+
     client_socket = accept(server_socket, (struct sockaddr *)&client_info, &client_socket_size);
     if(client_socket < 0){
         printf("Accept request failed, exiting..\n");
@@ -67,8 +70,8 @@ int main(int argc, char *argv[]){
         exit(1);
     }else{
         printf("Connection Accepted\n");
+        active_connections++;
     }
-
 
     close(server_socket);
 
