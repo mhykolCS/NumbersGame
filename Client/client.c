@@ -1,6 +1,7 @@
 #include "client.h"
 #define NET_PROTOCOL AF_INET
 #define TCP_CONNECTION SOCK_STREAM
+#define BUFFER_SIZE 1024
 
 int main(int argc, char *argv[]){
 
@@ -12,6 +13,10 @@ int main(int argc, char *argv[]){
     int PORT = atoi(argv[3]);
     int client_socket;
     int server_socket;
+    char game_number[2];
+    char first_word[10];
+    char client_message[BUFFER_SIZE];
+    char server_message[BUFFER_SIZE];
 
     // fill const client struct with data
     const struct sockaddr_in client_info = (const struct sockaddr_in){
@@ -42,6 +47,47 @@ int main(int argc, char *argv[]){
     }else{
         printf("Connected to server\n\n");
     }
+
+    do{
+        memset(client_message, '\0', sizeof(client_message));
+        memset(server_message, '\0', sizeof(server_message));
+        memset(first_word, '\0', sizeof(first_word)); 
+
+        recv(client_socket, server_message, BUFFER_SIZE-1, 0);
+        if(server_message[0] != '\0'){
+            for(int i = 0; i < 10; i++){
+                if(server_message[i] == ' '){
+                    strncpy(first_word, server_message, i);
+                    break;                    
+                }
+            }
+        }
+
+        if(strcmp(first_word, "TEXT") == 0){
+            printf("%s\n", &server_message[5]);
+        }
+
+        if(strcmp(first_word, "GO") == 0){
+            printf("It is your turn!, the current score is %s\n", &server_message[3]);
+            scanf("%s", game_number);
+            memset(client_message, '\0', sizeof(client_message));
+            strcpy(client_message, "MOVE ");
+            strcat(client_message, game_number);
+
+            printf("%s\n", client_message);
+            
+            send(client_socket, client_message, sizeof(client_message), 0);
+        }
+
+        if(strcmp(first_word, "END") == 0){
+
+        }
+
+        if(strcmp(first_word, "ERROR") == 0){
+
+        }
+
+    }while(strcmp(client_message, "quit") != 0);
 
     close(client_socket);
     close(server_socket);
