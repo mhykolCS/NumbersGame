@@ -1,7 +1,7 @@
 server.o: server.c server.h
-	gcc -g server.c -o server
+	gcc -g server.c -o game_server
 
 clean:
-	rm server.exe
+	rm game_server.exe
 
 

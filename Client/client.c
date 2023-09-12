@@ -13,6 +13,7 @@ int main(int argc, char *argv[]){
     int PORT = atoi(argv[3]);
     int client_socket;
     int server_socket;
+    int recv_bytes;
     char game_number[2];
     char first_word[10];
     char client_message[BUFFER_SIZE];
@@ -51,14 +52,21 @@ int main(int argc, char *argv[]){
     do{
         memset(client_message, '\0', sizeof(client_message));
         memset(server_message, '\0', sizeof(server_message));
-        memset(first_word, '\0', sizeof(first_word)); 
+        memset(first_word, '\0', sizeof(first_word));
+        fflush(stdout);
+        fflush(stdin);
 
-        recv(client_socket, server_message, BUFFER_SIZE-1, 0);
+
+        recv_bytes = recv(client_socket, server_message, BUFFER_SIZE-1, 0);
+
+        if(recv_bytes == 0){
+            continue;
+        }
         if(server_message[0] != '\0'){
             for(int i = 0; i < 10; i++){
                 if(server_message[i] == ' '){
                     strncpy(first_word, server_message, i);
-                    break;                    
+                    break;                 
                 }
             }
         }
@@ -70,21 +78,24 @@ int main(int argc, char *argv[]){
         if(strcmp(first_word, "GO") == 0){
             printf("It is your turn!, the current score is %s\n", &server_message[3]);
             scanf("%s", game_number);
+            if(strcmp(client_message, "quit") == 0){
+                strcat(client_message, " ");
+                send(client_socket, client_message, sizeof(client_message), 0);
+                break;
+            }
             memset(client_message, '\0', sizeof(client_message));
             strcpy(client_message, "MOVE ");
             strcat(client_message, game_number);
-
-            printf("%s\n", client_message);
-            
             send(client_socket, client_message, sizeof(client_message), 0);
         }
 
         if(strcmp(first_word, "END") == 0){
-
+            printf("Your opponent has left the game\n");
+            exit(0);
         }
 
         if(strcmp(first_word, "ERROR") == 0){
-
+            printf("%s\n", &server_message[6]);
         }
 
     }while(strcmp(client_message, "quit") != 0);

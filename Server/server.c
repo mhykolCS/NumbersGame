@@ -1,17 +1,18 @@
 #include "server.h"
 #define NET_PROTOCOL AF_INET
 #define TCP_CONNECTION SOCK_STREAM
-#define PORT 80
+
 #define BACKLOG 10
 #define BUFFER_SIZE 1024
 
 int main(int argc, char *argv[]){
 
-    /*if(argc < 4){
+    if(argc < 4){
         printf("Correct usage: game_server.exe \"port\" \"game\" \"game arguments\"\n");
         exit(1);
-    }*/
+    }
 
+    const int PORT = atoi(argv[1]);
     struct sockaddr_in client_info_one;
     struct sockaddr_in client_info_two;
     int server_socket;
@@ -25,6 +26,7 @@ int main(int argc, char *argv[]){
     int game_recieved_number;
     int game_current_turn = 1;
     int current_client_socket;
+    int recv_bytes;
     char client_message[BUFFER_SIZE];
     char server_message[BUFFER_SIZE];
     char first_word[10];
@@ -91,6 +93,7 @@ int main(int argc, char *argv[]){
         close(server_socket);
         close(client_socket_one);
         close(client_socket_two);
+        exit(1);
     }else{
         printf("Player Two Connection Accepted\n");
         strcpy(server_message, "TEXT Welcome to the game Player Two!");
@@ -102,22 +105,39 @@ int main(int argc, char *argv[]){
         memset(server_message, '\0', sizeof(server_message));
         memset(first_word, '\0', sizeof(first_word)); 
 
-        if(game_current_turn == 1){
-                current_client_socket = client_socket_one;
-                game_current_turn = 2;
-            }else{
-                current_client_socket = client_socket_two;
-                game_current_turn = 1;
-            }
-
-
         sprintf(game_score_char, "%d", game_score);
-
         strcpy(server_message, "GO ");
         strcat(server_message, game_score_char);
-        send(current_client_socket, server_message, sizeof(server_message), 0);
 
-        recv(current_client_socket, client_message, BUFFER_SIZE-1, 0);
+        printf("current turn: %d\n", game_current_turn);
+
+        if(game_current_turn == 1){
+            send(client_socket_one, server_message, sizeof(server_message), 0);
+            recv_bytes = recv(client_socket_one, client_message, BUFFER_SIZE-1, 0);
+            game_current_turn = 2;
+        }else{
+            send(client_socket_two, server_message, sizeof(server_message), 0);
+            recv_bytes = recv(client_socket_two, client_message, BUFFER_SIZE-1, 0);
+            game_current_turn = 1;
+        }
+
+
+        printf("bytes: %d\n", recv_bytes);
+        if(recv_bytes == -1){
+            strcpy(server_message, "END ");
+            send(client_socket_one, server_message, sizeof(server_message), 0);
+            send(client_socket_two, server_message, sizeof(server_message), 0);
+            close(server_socket);
+            close(client_socket_one);
+            close(client_socket_two);
+            exit(1);
+        }else if(recv_bytes < 30){
+            if(game_current_turn == 1){
+                game_current_turn = 2;
+            }else{
+                game_current_turn = 1;
+            }
+        }
 
         if(client_message[0] != '\0'){
             for(int i = 0; i < 10; i++){
@@ -127,15 +147,26 @@ int main(int argc, char *argv[]){
                 }
             }
         }
-
-
-        printf("Here\n");
         if(strcmp(first_word, "MOVE") == 0){
-            printf("Here2\n");
-            game_recieved_number = atoi(&client_message[3]);
+            game_recieved_number = atoi(&client_message[5]);
+
+            if(game_recieved_number <= 0 || game_recieved_number >= 10){
+                strcpy(server_message, "ERROR Number not in the bounds of 1-9, try again..");
+                if(game_current_turn == 1){
+                    send(client_socket_two, server_message, sizeof(server_message), 0);
+                    game_current_turn = 2;
+                    continue;
+                }else{
+                    send(client_socket_one, server_message, sizeof(server_message), 0);
+                    game_current_turn = 1;
+                    continue;
+                }
+            }
+
+            game_score += game_recieved_number;
             printf("%d\n", game_recieved_number);
             
-        }else if(strcmp(first_word, "QUIT") == 0){
+        }else if(strcmp(first_word, "quit") == 0){
             strcpy(server_message, "TEXT Your opponent has left the game, exiting..");
             if(game_current_turn == 1){
                 send(client_socket_one, server_message, sizeof(server_message), 0);
@@ -151,11 +182,22 @@ int main(int argc, char *argv[]){
             break;
         }
         
+    }while(game_score < 30);
 
+    if(game_score >= 30){
+        if(game_current_turn == 2){
+            strcpy(server_message, "TEXT Player one WINS!!!!");
+        }else{
+            strcpy(server_message, "TEXT Player two WINS!!!!");
+        }
         
-
-    }while(game_score > 30);
-
+        send(client_socket_one, server_message, sizeof(server_message), 0);
+        send(client_socket_two, server_message, sizeof(server_message), 0);
+    }
+    
+    strcpy(server_message, "END ");
+    send(client_socket_one, server_message, sizeof(server_message), 0);
+    send(client_socket_two, server_message, sizeof(server_message), 0);
     close(server_socket);
     close(client_socket_one);
     close(client_socket_two);

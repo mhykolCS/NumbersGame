@@ -1,7 +1,7 @@
 client.o: client.c client.h
-	gcc -g client.c -o client
+	gcc -g client.c -o game_client
 
 clean:
-	rm client.exe
+	rm game_client.exe
 
 
