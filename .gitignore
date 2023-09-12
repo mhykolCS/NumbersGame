@@ -1,3 +1,5 @@
 /.vscode
 /Demo
 /Documentation
+/Client/*.exe
+/Server/*.exe
