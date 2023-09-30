@@ -109,8 +109,6 @@ int main(int argc, char *argv[]){
         strcpy(server_message, "GO ");
         strcat(server_message, game_score_char);
 
-        printf("current turn: %d\n", game_current_turn);
-
         if(game_current_turn == 1){
             send(client_socket_one, server_message, sizeof(server_message), 0);
             recv_bytes = recv(client_socket_one, client_message, BUFFER_SIZE-1, 0);
@@ -121,8 +119,6 @@ int main(int argc, char *argv[]){
             game_current_turn = 1;
         }
 
-
-        printf("bytes: %d\n", recv_bytes);
         if(recv_bytes == -1){
             strcpy(server_message, "END ");
             send(client_socket_one, server_message, sizeof(server_message), 0);
@@ -164,7 +160,6 @@ int main(int argc, char *argv[]){
             }
 
             game_score += game_recieved_number;
-            printf("%d\n", game_recieved_number);
             
         }else if(strcmp(first_word, "quit") == 0){
             strcpy(server_message, "TEXT Your opponent has left the game, exiting..");
